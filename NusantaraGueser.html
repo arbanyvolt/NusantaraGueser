@@ -4,126 +4,142 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>NusantaraGuesser — Tebak Sejarah Indonesia</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" crossorigin="">
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js" crossorigin=""></script>
 <style>
 :root{
-  --bg:#0d0f14;--panel:#161a23;--panel2:#1e2430;--bd:#2e3646;
+  --bg:#0b0e14;--panel:#151922;--panel2:#1d2330;--bd:#2d3648;
   --ink:#f1f5f9;--mut:#94a3b8;--acc:#f97316;--acc2:#fb923c;
-  --gold:#facc15;--ok:#22c55e;--bad:#ef4444;--sea:#0c1c2e;--land:#365341;--land-bd:#5b8a6b;
+  --gold:#facc15;--ok:#22c55e;--bad:#ef4444;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
-button,input{font-family:inherit}
+button,input,select{font-family:inherit}
 .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
 
-/* Layout */
+/* Shared UI */
 .app{display:flex;flex-direction:column;min-height:100vh}
 .hud{
   display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
   padding:10px 18px;background:rgba(15,18,25,.92);border-bottom:1px solid var(--bd);
   backdrop-filter:blur(8px);position:sticky;top:0;z-index:30
 }
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.3px}
-.brand span.logo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--acc),#dc2626);font-size:18px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:18px;letter-spacing:.3px;cursor:pointer}
+.brand span.logo{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--acc),#dc2626);font-size:19px;box-shadow:0 4px 12px rgba(249,115,22,.35)}
 .hud-pills{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.pill{
-  background:var(--panel2);border:1px solid var(--bd);border-radius:999px;
-  padding:6px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px
-}
+.pill{background:var(--panel2);border:1px solid var(--bd);border-radius:999px;padding:6px 12px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
 .pill b{color:var(--gold)}
 
 .btn{
-  border:none;border-radius:8px;padding:9px 14px;font-weight:700;font-size:14px;
-  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  transition:transform .1s,filter .15s,background .15s;background:var(--panel2);color:var(--ink);border:1px solid var(--bd)
+  border:1px solid var(--bd);border-radius:9px;padding:9px 15px;font-weight:700;font-size:14px;
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  transition:transform .12s,filter .15s,background .15s;background:var(--panel2);color:var(--ink)
 }
 .btn:hover:not(:disabled){filter:brightness(1.15);transform:translateY(-1px)}
 .btn:active:not(:disabled){transform:translateY(0)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn.pri{background:linear-gradient(135deg,var(--acc),#ea580c);color:#fff;border-color:transparent;box-shadow:0 4px 14px rgba(249,115,22,.35)}
+.btn.pri{background:linear-gradient(135deg,var(--acc),#ea580c);color:#fff;border-color:transparent;box-shadow:0 6px 18px rgba(249,115,22,.35)}
 .btn.ok{background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border-color:transparent}
-.btn.sm{padding:6px 10px;font-size:12px;border-radius:6px}
+.btn.sm{padding:6px 10px;font-size:12px;border-radius:7px}
+.btn.lg{padding:13px 24px;font-size:16px;border-radius:12px}
 
-/* Main Stage */
-.stage{
-  flex:1;display:grid;grid-template-columns:1fr 410px;gap:14px;padding:14px;max-width:1440px;width:100%;margin:0 auto
+/* Landing / Home Page */
+.hero{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:28px 18px;text-align:center;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 50% 15%,rgba(249,115,22,.16),transparent 55%),
+             radial-gradient(circle at 80% 80%,rgba(56,189,248,.08),transparent 45%)
 }
-@media(max-width:980px){.stage{grid-template-columns:1fr;padding:10px}}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;
+  background:rgba(249,115,22,.14);border:1px solid rgba(249,115,22,.4);color:var(--acc2);
+  font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px
+}
+.hero h1{font-size:clamp(32px,6vw,58px);margin:0 0 12px;line-height:1.08;letter-spacing:-.5px}
+.hero h1 span{background:linear-gradient(135deg,#fff,#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p.sub{max-width:640px;color:var(--mut);font-size:clamp(14px,2vw,17px);line-height:1.6;margin:0 0 22px}
 
-/* Scene Viewer (Pan & Zoom) */
+.era-filter{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:20px}
+.chip{
+  padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;
+  background:var(--panel2);color:var(--mut);border:1px solid var(--bd);transition:all .15s
+}
+.chip.active{background:rgba(249,115,22,.18);color:var(--acc2);border-color:var(--acc)}
+
+.hero-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:22px}
+.hero-stats{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:28px}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:960px;width:100%}
+@media(max-width:780px){.feat-grid{grid-template-columns:1fr}}
+.feat{background:rgba(21,25,34,.85);border:1px solid var(--bd);border-radius:14px;padding:16px;text-align:left;backdrop-filter:blur(6px)}
+.feat .ic{font-size:26px;margin-bottom:6px}
+.feat h3{margin:0 0 6px;font-size:15px}
+.feat p{margin:0;font-size:13px;color:var(--mut);line-height:1.5}
+
+/* Game Stage */
+.stage{
+  flex:1;display:grid;grid-template-columns:1fr 440px;gap:14px;padding:14px;max-width:1480px;width:100%;margin:0 auto
+}
+@media(max-width:1020px){.stage{grid-template-columns:1fr;padding:10px}}
+
+/* Scene Viewer */
 .viewer{
   position:relative;background:#07090d;border:1px solid var(--bd);border-radius:14px;
-  overflow:hidden;min-height:420px;display:flex;align-items:center;justify-content:center;
+  overflow:hidden;min-height:440px;display:flex;align-items:center;justify-content:center;
   user-select:none;box-shadow:0 12px 30px rgba(0,0,0,.45)
 }
-.viewer.can-pan{cursor:grab}
-.viewer.panning{cursor:grabbing}
-.scene-wrap{
-  width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-  transform-origin:center center;transition:transform .08s ease-out
-}
-.scene-img{
-  max-width:100%;max-height:74vh;width:100%;height:100%;object-fit:contain;
-  pointer-events:none;display:block;filter:contrast(1.04) sepia(.12)
-}
-.scene-fb{
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;padding:32px;max-width:520px
-}
-.scene-overlay-top{
-  position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:8px
-}
+.viewer.can-pan{cursor:grab}.viewer.panning{cursor:grabbing}
+.scene-wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center;transform-origin:center center;transition:transform .08s ease-out}
+.scene-img{max-width:100%;max-height:76vh;width:100%;height:100%;object-fit:contain;pointer-events:none;display:block;filter:contrast(1.04) sepia(.1);animation:fadeIn .35s ease-out}
+@keyframes fadeIn{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
+.scene-fb{display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;max-width:520px}
+.scene-overlay-top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;gap:8px;z-index:5}
 .scene-overlay-top>*{pointer-events:auto}
-.badge-lens{
-  background:rgba(13,15,20,.82);border:1px solid var(--bd);backdrop-filter:blur(6px);
-  padding:6px 11px;border-radius:8px;font-size:12px;color:var(--ink);display:flex;align-items:center;gap:6px;cursor:pointer
-}
+.badge-lens{background:rgba(13,15,20,.84);border:1px solid var(--bd);backdrop-filter:blur(6px);padding:6px 11px;border-radius:8px;font-size:12px;color:var(--ink);display:flex;align-items:center;gap:6px;cursor:pointer}
 .badge-lens:hover{border-color:var(--acc)}
-.zoom-ctrl{
-  display:flex;flex-direction:column;gap:4px;background:rgba(13,15,20,.82);
-  border:1px solid var(--bd);padding:4px;border-radius:8px;backdrop-filter:blur(6px)
-}
+.zoom-ctrl{display:flex;flex-direction:column;gap:4px;background:rgba(13,15,20,.84);border:1px solid var(--bd);padding:4px;border-radius:8px;backdrop-filter:blur(6px)}
 .hint-box{
-  position:absolute;bottom:12px;left:12px;right:12px;background:rgba(13,15,20,.88);
+  position:absolute;bottom:12px;left:12px;right:12px;background:rgba(13,15,20,.9);
   border:1px solid var(--acc);border-radius:10px;padding:10px 14px;font-size:13px;
-  backdrop-filter:blur(6px);display:flex;justify-content:space-between;align-items:center;gap:10px
+  backdrop-filter:blur(6px);display:flex;justify-content:space-between;align-items:center;gap:10px;z-index:5
 }
 
-/* Guess Panel (Map + Year) */
-.panel{
-  background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:14px;
-  display:flex;flex-direction:column;gap:12px
-}
+/* Right Panel & Leaflet Map */
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
 .sec-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--mut);display:flex;justify-content:space-between;align-items:center}
-.map-box{
-  position:relative;background:var(--sea);border:1px solid var(--bd);border-radius:10px;overflow:hidden;
-  cursor:crosshair;aspect-ratio:940/380
-}
-.map-box svg{width:100%;height:100%;display:block}
-.map-status{font-size:12px;color:var(--mut);display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+.map-wrap{position:relative;border:1px solid var(--bd);border-radius:10px;overflow:hidden;background:#0d1b2a}
+#map{width:100%;height:260px;transition:height .2s ease}
+.map-wrap.expanded #map{height:400px}
+.map-tools{position:absolute;top:8px;right:8px;z-index:10;display:flex;gap:4px}
+.map-styles{position:absolute;bottom:8px;left:8px;z-index:10;display:flex;gap:4px}
+.map-status{font-size:12px;color:var(--mut);display:flex;justify-content:space-between;align-items:center;margin-top:5px}
+.maplibregl-canvas{outline:none}
 
+/* Era / Year Card */
 .era-card{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:12px}
-.year-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:8px 0}
-.year-input{
-  width:110px;text-align:center;font-size:22px;font-weight:800;padding:6px;border-radius:8px;
-  background:var(--bg);color:var(--gold);border:1px solid var(--bd)
-}
+.year-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0}
+.year-input{width:110px;text-align:center;font-size:22px;font-weight:800;padding:6px;border-radius:8px;background:var(--bg);color:var(--gold);border:1px solid var(--bd)}
 .era-tag{font-size:12px;padding:4px 9px;border-radius:999px;background:rgba(249,115,22,.15);color:var(--acc2);font-weight:600}
 input[type=range]{width:100%;accent-color:var(--acc);cursor:pointer;margin:6px 0}
 .step-btns{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-top:6px}
 .step-btns button{padding:6px 2px;font-size:12px;border-radius:6px;background:var(--bg);color:var(--ink);border:1px solid var(--bd);cursor:pointer}
 .step-btns button:hover{border-color:var(--acc);color:var(--acc2)}
 
-/* Modal & Result */
-.ov{position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
-.modal{background:var(--panel);border:1px solid var(--bd);border-radius:16px;max-width:740px;width:100%;max-height:92vh;overflow-y:auto;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.6);animation:pop .22s ease-out}
+/* Modal & Timeline */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:1000}
+.modal{background:var(--panel);border:1px solid var(--bd);border-radius:16px;max-width:780px;width:100%;max-height:92vh;overflow-y:auto;padding:22px;box-shadow:0 20px 50px rgba(0,0,0,.6);animation:pop .22s ease-out}
 @keyframes pop{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+#resMap{width:100%;height:240px;border-radius:10px;border:1px solid var(--bd);margin:10px 0}
 .score-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
 @media(max-width:600px){.score-grid{grid-template-columns:1fr}}
 .sc-card{background:var(--panel2);border:1px solid var(--bd);border-radius:10px;padding:12px}
 .sc-val{font-size:24px;font-weight:800;color:var(--gold)}
 .lens-opt{display:flex;justify-content:space-between;align-items:center;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--panel2);margin:8px 0;cursor:pointer;text-align:left;width:100%;color:var(--ink)}
 .lens-opt.active{border-color:var(--acc);background:rgba(249,115,22,.14)}
-.confetti{position:fixed;inset:0;pointer-events:none;z-index:60;overflow:hidden}
+.tl-item{display:grid;grid-template-columns:120px 1fr;gap:14px;padding:14px;border:1px solid var(--bd);border-radius:12px;background:var(--panel2);margin-bottom:12px;align-items:start}
+@media(max-width:560px){.tl-item{grid-template-columns:1fr}}
+.tl-img{width:100%;height:96px;object-fit:cover;border-radius:8px;background:#0b0e14;border:1px solid var(--bd)}
+.team-in{width:100%;padding:9px 12px;border-radius:8px;background:var(--bg);color:var(--ink);border:1px solid var(--bd);margin-bottom:8px;font-size:14px}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:1100;overflow:hidden}
 .confetti i{position:absolute;top:-12px;width:10px;height:14px;animation:fall 2.6s linear forwards}
 @keyframes fall{to{transform:translateY(105vh) rotate(540deg);opacity:0}}
 </style>
@@ -131,136 +147,204 @@ input[type=range]{width:100%;accent-color:var(--acc);cursor:pointer;margin:6px 0
 <body>
 <div class="app" id="app"></div>
 <script>
-/* Bank Adegan Sejarah Indonesia (Koordinat Lat/Lon asli + Tahun + Foto Wikimedia Commons + Fallback Deskriptif) */
 const SCENES = [
-  {
-    id:"proklamasi",
-    title:"Proklamasi Kemerdekaan RI",
-    place:"Jalan Pegangsaan Timur No. 56, Jakarta",
-    year:1945,
-    lat:-6.200,lon:106.847,
-    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Indonesia_declaration_of_independence_17_August_1945.jpg?width=1000",
-    hint:"Peristiwa bersejarah ini berlangsung di halaman rumah di pusat ibu kota pada bulan Agustus.",
-    fact:"Pada 17 Agustus 1945 pukul 10.00 WIB, Ir. Soekarno didampingi Mohammad Hatta membacakan teks Proklamasi Kemerdekaan Indonesia di Jakarta."
-  },
   {
     id:"borobudur",
     title:"Pembangunan Candi Borobudur (Dinasti Syailendra)",
     place:"Magelang, Jawa Tengah",
-    year:825,
-    lat:-7.608,lon:110.204,
+    year:825,lat:-7.608,lon:110.204,era:"pre",
     img:"https://commons.wikimedia.org/wiki/Special:FilePath/Borobudur-Nothwest-view.jpg?width=1000",
-    hint:"Monumen Buddha terbesar di dunia ini berdiri di kawasan dataran Kedu, Jawa Tengah.",
-    fact:"Candi Borobudur dibangun pada masa Dinasti Syailendra sekitar abad ke-9 (diperkirakan rampung sekitar 825 M) dengan arsitektur punden berundak dan ratusan stupa."
+    prompt:"Monumen megah ini merupakan mahakarya arsitektur Nusantara kuno. Di manakah letaknya dan sekitar tahun berapa dibangun?",
+    hint:"Monumen Buddha terbesar di dunia ini berdiri di dataran Kedu, Jawa Tengah.",
+    fact:"Candi Borobudur dibangun pada masa pemerintahan Dinasti Syailendra (Kerajaan Mataram Kuno) di bawah Raja Samaratungga sekitar abad ke-8 hingga ke-9 Masehi (diperkirakan rampung sekitar tahun 825 M). Monumen ini terdiri atas 10 tingkat berundak dengan 2.672 panel relief dan 504 arca Buddha yang menggambarkan perjalanan menuju pencerahan.",
+    value:"Menunjukkan tingginya peradaban, keahlian teknik arsitektur tanpa perekat semen, serta toleransi budaya dan spiritual masyarakat Nusantara kuno.",
+    source:"UNESCO World Heritage List & Balai Konservasi Borobudur (Kemendikbudristek RI)"
   },
   {
-    id:"kaa",
-    title:"Konferensi Asia-Afrika (KAA)",
-    place:"Gedung Merdeka, Bandung",
-    year:1955,
-    lat:-6.921,lon:107.609,
-    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Asian%E2%80%93African_Conference_at_Bandung_April_1955.jpg?width=1000",
-    hint:"Pertemuan pemimpin 29 negara Asia dan Afrika ini digelar di kota berjuluk Parijs van Java.",
-    fact:"Konferensi Asia-Afrika berlangsung pada 18–24 April 1955 di Bandung dan melahirkan Dasasila Bandung yang menginspirasi Gerakan Non-Blok."
+    id:"majapahit",
+    title:"Kejayaan Kerajaan Majapahit (Gapura Bajang Ratu, Trowulan)",
+    place:"Trowulan, Mojokerto, Jawa Timur",
+    year:1350,lat:-7.556,lon:112.398,era:"pre",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Bajang_Ratu_Gate_Trowulan.jpg?width=1000",
+    prompt:"Gapura bata merah bergaya paduraksa ini berada di bekas ibu kota kerajaan maritim terbesar Nusantara. Di mana lokasinya dan sekitar abad/tahun berapa masa kejayaan kerajaan tersebut?",
+    hint:"Situs Trowulan terletak di Kabupaten Mojokerto, Jawa Timur, pada masa pemerintahan Hayam Wuruk dan Mahapatih Gajah Mada.",
+    fact:"Gapura Bajang Ratu di Trowulan merupakan peninggalan Kerajaan Majapahit dari abad ke-14 yang diperkirakan dibangun untuk menghormati Raja Jayanegara, sebelum Majapahit mencapai puncak kejayaan pada masa Raja Hayam Wuruk (1350–1389 M) dan Patih Gajah Mada dengan Sumpah Palapa.",
+    value:"Mengajarkan pentingnya persatuan Nusantara, tata kelola pemerintahan yang kuat, serta jaringan perdagangan maritim internasional.",
+    source:"Direktorat Pelindungan Kebudayaan Kemendikbudristek & Kitab Negarakertagama"
+  },
+  {
+    id:"banda",
+    title:"Benteng Belgica & Perlawanan Monopoli Pala Banda",
+    place:"Banda Neira, Maluku Tengah",
+    year:1611,lat:-4.525,lon:129.898,era:"pre",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Fort_Belgica_01.JPG?width=1000",
+    prompt:"Benteng segilima ini dibangun VOC untuk menguasai rempah pala yang hanya tumbuh di kepulauan ini. Di mana letak benteng ini dan tahun berapa dibangun?",
+    hint:"Kepulauan penghasil pala di Maluku ini menjadi pusat perebutan dagang rempah dunia pada awal abad ke-17.",
+    fact:"Benteng Belgica dibangun oleh VOC di Pulau Banda Neira pada tahun 1611 atas perintah Gubernur Jenderal Pieter Both (dan diperkuat Jan Pieterszoon Coen). Benteng ini digunakan VOC untuk memaksakan monopoli perdagangan pala yang memicu perlawanan sengit para Orang Kaya (pemimpin adat) Banda.",
+    value:"Mengingatkan betapa bernilainya kekayaan rempah Nusantara di mata dunia dan pentingnya menjaga kedaulatan sumber daya alam bangsa.",
+    source:"Cagar Budaya Nasional Kemendikbudristek & Sejarah Nasional Indonesia Jilid III"
+  },
+  {
+    id:"makassar",
+    title:"Perlawanan Sultan Hasanuddin & Benteng Fort Rotterdam",
+    place:"Makassar, Sulawesi Selatan",
+    year:1667,lat:-5.134,lon:119.405,era:"pre",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Fort_Rotterdam_Makassar.jpg?width=1000",
+    prompt:"Benteng peninggalan Kerajaan Gowa-Tallo (Ujung Pandang) ini terkait dengan perlawanan 'Ayam Jantan dari Timur' melawan VOC. Di kota mana lokasinya dan tahun berapa Perjanjian Bongaya ditandatangani?",
+    hint:"Peristiwa ini berlangsung di pusat Kerajaan Gowa-Tallo di pesisir selatan Sulawesi pada pertengahan abad ke-17.",
+    fact:"Awalnya bernama Benteng Ujung Pandang yang dibangun Kerajaan Gowa-Tallo pada 1545, benteng ini jatuh ke tangan VOC setelah perang panjang melawan Sultan Hasanuddin yang berakhir dengan Perjanjian Bongaya pada 18 November 1667. VOC kemudian menamainya Fort Rotterdam.",
+    value:"Keteguhan Sultan Hasanuddin dalam mempertahankan kedaulatan maritim dan perdagangan bebas di Indonesia bagian timur.",
+    source:"Balai Pelestarian Kebudayaan Wilayah XIX & Sejarah Nasional Indonesia Jilid III"
+  },
+  {
+    id:"padri",
+    title:"Perang Padri & Perjuangan Tuanku Imam Bonjol",
+    place:"Bonjol, Pasaman, Sumatra Barat",
+    year:1821,lat:-0.011,lon:100.220,era:"pre",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Imam_Bonjol.jpg?width=900",
+    prompt:"Tokoh pemimpin dari Minangkabau ini memimpin perlawanan panjang melawan kolonial Belanda dalam Perang Padri. Di wilayah mana pusat perjuangannya dan tahun berapa perang melawan Belanda dimulai?",
+    hint:"Perjuangan ini berlangsung di kawasan Sumatra Barat dan dipimpin oleh ulama bergelar Tuanku Imam Bonjol.",
+    fact:"Perang Padri bermula sebagai konflik internal di Minangkabau lalu berubah menjadi perlawanan bersatu Kaum Padri dan Kaum Adat melawan Belanda sejak tahun 1821 hingga 1837. Tuanku Imam Bonjol memimpin pertahanan dari Benteng Bonjol sebelum akhirnya ditangkap Belanda lewat tipu muslihat perundingan pada 1837.",
+    value:"Menunjukkan bahwa persatuan antara kelompok agama dan adat mampu menjadi kekuatan besar melawan penindasan kolonial.",
+    source:"Sejarah Nasional Indonesia Jilid IV (Poesponegoro & Notosusanto)"
+  },
+  {
+    id:"diponegoro",
+    title:"Akhir Perang Jawa (Penangkapan Pangeran Diponegoro)",
+    place:"Magelang, Jawa Tengah",
+    year:1830,lat:-7.479,lon:110.217,era:"pre",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Raden_Saleh_-_Diponegoro_arrest.jpg?width=1000",
+    prompt:"Lukisan karya maestro Raden Saleh ini menggambarkan penangkapan pemimpin Perang Jawa secara licik saat perundingan. Di kota mana peristiwa ini terjadi dan tahun berapa?",
+    hint:"Peristiwa pengkhianatan perundingan oleh Jenderal De Kock ini terjadi di Keresidenan Kedu, Jawa Tengah.",
+    fact:"Setelah memimpin Perang Jawa (1825–1830) yang menguras kas dan pasukan Hindia Belanda, Pangeran Diponegoro diundang berunding ke Magelang pada 28 Maret 1830 oleh Letjen Hendrik Merkus de Kock, lalu ditangkap secara sepihak dan diasingkan ke Manado dan Makassar.",
+    value:"Keberanian moral melawan ketidakadilan serta kritik visual Raden Saleh atas pengkhianatan kolonial terhadap kehormatan bangsa.",
+    source:"Arsip Nasional RI (ANRI) & Koleksi Istana Kepresidenan RI"
   },
   {
     id:"krakatau",
     title:"Letusan Dahsyat Gunung Krakatau",
     place:"Selat Sunda (antara Jawa & Sumatra)",
-    year:1883,
-    lat:-6.102,lon:105.423,
+    year:1883,lat:-6.102,lon:105.423,era:"pre",
     img:"https://commons.wikimedia.org/wiki/Special:FilePath/Krakatoa_eruption_lithograph.jpg?width=1000",
+    prompt:"Lukisan ini menggambarkan salah satu bencana letusan gunung api terdahsyat di Nusantara. Di manakah lokasinya dan kapan peristiwa ini terjadi?",
     hint:"Letusan vulkanik paling terkenal abad ke-19 di Nusantara ini terjadi di selat pemisah Jawa dan Sumatra.",
-    fact:"Letusan Krakatau pada 26–27 Agustus 1883 terdengar hingga ribuan kilometer, memicu tsunami besar, dan menurunkan suhu global akibat abu vulkaniknya."
-  },
-  {
-    id:"surabaya",
-    title:"Perjuangan Arek-Arek Suroboyo (Bung Tomo)",
-    place:"Surabaya, Jawa Timur",
-    year:1945,
-    lat:-7.257,lon:112.752,
-    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Bung_Tomo.jpg?width=1000",
-    hint:"Pidato berapi-api tokoh ini membakar semangat perlawanan 10 November di kota pelabuhan utama Jawa Timur.",
-    fact:"Pertempuran Surabaya memuncak pada 10 November 1945; Bung Tomo membangkitkan semangat juang rakyat lewat siaran radio dan tanggal ini diperingati sebagai Hari Pahlawan."
+    fact:"Letusan puncak Gunung Krakatau terjadi pada 26–27 Agustus 1883 di Selat Sunda. Dentuman letusannya terdengar hingga lebih dari 4.500 km (mencapai Perth dan Pulau Rodriguez), memicu gelombang tsunami setinggi lebih dari 30 meter, dan menurunkan suhu rata-rata bumi akibat abu vulkanik di stratosfer.",
+    value:"Mengajarkan pentingnya kesadaran geologis dan mitigasi bencana bagi bangsa yang hidup di jalur Cincin Api Pasifik.",
+    source:"Royal Society of London Report (1888) & Badan Geologi Kementerian ESDM RI"
   },
   {
     id:"kartini",
     title:"Gagasan Emansipasi R.A. Kartini",
     place:"Jepara, Jawa Tengah",
-    year:1900,
-    lat:-6.589,lon:110.668,
+    year:1900,lat:-6.589,lon:110.668,era:"pre",
     img:"https://commons.wikimedia.org/wiki/Special:FilePath/COLLECTIE_TROPENMUSEUM_Portret_van_Raden_Ajeng_Kartini_TMnr_10018776.jpg?width=900",
-    hint:"Putri bupati dari pesisir utara Jawa Tengah ini menyuarakan hak pendidikan perempuan lewat surat-suratnya.",
-    fact:"Sekitar pergantian abad ke-20 (1899–1904), R.A. Kartini menulis surat-surat pemikirannya dari Jepara yang kelak dibukukan menjadi 'Habis Gelap Terbitlah Terang'."
-  },
-  {
-    id:"hatta",
-    title:"Diplomasi Ekonomi & Kemerdekaan — Mohammad Hatta",
-    place:"Bukittinggi / Jakarta (Kiprah Kedaulatan RI)",
-    year:1949,
-    lat:-0.305,lon:100.369,
-    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Mohammad_Hatta_1950.jpg?width=900",
-    hint:"Tokoh kelahiran Sumatra Barat ini memimpin delegasi Indonesia dalam Konferensi Meja Bundar untuk pengakuan kedaulatan.",
-    fact:"Mohammad Hatta (lahir di Bukittinggi) memimpin delegasi RI pada Konferensi Meja Bundar 1949 di Den Haag yang berujung pada pengakuan kedaulatan Indonesia."
+    prompt:"Tokoh perempuan pada foto ini menyuarakan gagasan emansipasi dan pendidikan lewat surat-suratnya. Di kota mana ia menulis gagasan tersebut dan sekitar tahun berapa?",
+    hint:"Putri bupati ini tinggal di pesisir utara Jawa Tengah dan menulis surat pada pergantian abad ke-20.",
+    fact:"Sekitar tahun 1899–1904, Raden Adjeng Kartini dari Jepara aktif menulis surat kepada sahabat penanya di Belanda (seperti Rosa Abendanon) berisi gagasan kemajuan perempuan pribumi, pendidikan, dan kritik feodalisme. Surat-surat itu diterbitkan pada 1911 dengan judul 'Door Duisternis tot Licht' (Habis Gelap Terbitlah Terang).",
+    value:"Menginspirasi perjuangan kesetaraan hak pendidikan dan pemberdayaan perempuan di Indonesia.",
+    source:"Arsip Tropenmuseum / KITLV & Buku 'Habis Gelap Terbitlah Terang'"
   },
   {
     id:"tamansiswa",
     title:"Berdirinya Perguruan Taman Siswa",
     place:"Yogyakarta",
-    year:1922,
-    lat:-7.796,lon:110.369,
+    year:1922,lat:-7.796,lon:110.369,era:"pre",
     img:"https://commons.wikimedia.org/wiki/Special:FilePath/Ki_Hadjar_Dewantara.jpg?width=900",
-    hint:"Lembaga pendidikan pribumi dengan semboyan 'Tut Wuri Handayani' ini didirikan di kota pelajar.",
-    fact:"Pada 3 Juli 1922, Ki Hajar Dewantara mendirikan Perguruan Taman Siswa di Yogyakarta sebagai wujud perlawanan kultural dan pendidikan bagi rakyat Indonesia."
+    prompt:"Tokoh pendidikan pada foto ini mendirikan Perguruan Taman Siswa sebagai perlawanan kultural. Di kota mana dan tahun berapa perguruan tersebut didirikan?",
+    hint:"Lembaga pendidikan dengan semboyan 'Tut Wuri Handayani' ini didirikan di kota pelajar.",
+    fact:"Pada 3 Juli 1922, Raden Mas Soewardi Soerjaningrat (Ki Hajar Dewantara) mendirikan Nationaal Onderwijs Instituut Taman Siswa di Yogyakarta. Ia memperkenalkan sistem pendidikan merdeka yang berakar pada budaya bangsa dengan trilogi 'Ing Ngarsa Sung Tuladha, Ing Madya Mangun Karsa, Tut Wuri Handayani'.",
+    value:"Menegaskan bahwa pendidikan adalah hak semua lapisan rakyat dan fondasi utama kemerdekaan berpikir.",
+    source:"Museum Dewantara Kirti Griya & Kementerian Pendidikan, Kebudayaan, Riset, dan Teknologi RI"
+  },
+  {
+    id:"sumpahpemuda",
+    title:"Kongres Pemuda II & Sumpah Pemuda",
+    place:"Jalan Kramat Raya No. 106, Jakarta",
+    year:1928,lat:-6.183,lon:106.843,era:"pre",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/MuseumSumpahPemuda.jpg?width=1000",
+    prompt:"Gedung bersejarah ini menjadi saksi ikrar persatuan 'Satu Nusa, Satu Bangsa, Satu Bahasa' oleh pemuda Nusantara. Di kota mana dan tahun berapa peristiwa itu terjadi?",
+    hint:"Ikrar bersejarah tanggal 28 Oktober ini dikumandangkan di ibu kota kolonial Hindia Belanda (Batavia).",
+    fact:"Pada 27–28 Oktober 1928 di Batavia (Jakarta), organisasi pemuda lintas daerah menggelar Kongres Pemuda II yang diketuai Sugondo Djojopuspito. Di gedung Jalan Kramat Raya No. 106, ikrar Sumpah Pemuda dibacakan dan W.R. Supratman untuk pertama kalinya memperdengarkan lagu 'Indonesia Raya' dengan biola.",
+    value:"Menanamkan semangat persatuan melampaui batas suku, agama, dan daerah demi cita-cita Indonesia merdeka.",
+    source:"Museum Sumpah Pemuda (Kemendikbudristek RI)"
+  },
+  {
+    id:"proklamasi",
+    title:"Proklamasi Kemerdekaan RI",
+    place:"Jalan Pegangsaan Timur No. 56, Jakarta",
+    year:1945,lat:-6.200,lon:106.847,era:"post",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Indonesia_declaration_of_independence_17_August_1945.jpg?width=1000",
+    prompt:"Momen bersejarah ini menandai lahirnya kedaulatan bangsa Indonesia. Kapan dan di manakah peristiwa ini terjadi?",
+    hint:"Peristiwa bersejarah ini berlangsung di halaman rumah di pusat ibu kota pada bulan Agustus.",
+    fact:"Pada Jumat, 17 Agustus 1945 pukul 10.00 WIB di halaman rumah Ir. Soekarno (Jalan Pegangsaan Timur No. 56, Jakarta), Soekarno didampingi Mohammad Hatta membacakan teks Proklamasi Kemerdekaan Indonesia. Upacara singkat ini dilanjutkan dengan pengibaran bendera Merah Putih oleh Latief Hendraningrat dan Suhud.",
+    value:"Puncak tekad bangsa Indonesia untuk menentukan nasib sendiri secara bermartabat dan berdaulat.",
+    source:"Arsip Nasional Republik Indonesia (ANRI) & Museum Perumusan Naskah Proklamasi"
+  },
+  {
+    id:"surabaya",
+    title:"Pertempuran 10 November Surabaya (Bung Tomo)",
+    place:"Surabaya, Jawa Timur",
+    year:1945,lat:-7.257,lon:112.752,era:"post",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Bung_Tomo.jpg?width=1000",
+    prompt:"Tokoh pada foto ini mengobarkan semangat perlawanan rakyat lewat siaran radio pada peristiwa 10 November. Di kota mana dan tahun berapa peristiwa tersebut terjadi?",
+    hint:"Pertempuran besar ini terjadi di kota pelabuhan utama di Jawa Timur.",
+    fact:"Setelah ultimatum pasukan Sekutu/Inggris ditolak rakyat Surabaya pascatewasnya Brigjen A.W.S. Mallaby, pecah pertempuran heroik pada 10 November 1945. Sutomo (Bung Tomo) membakar semangat juang arek-arek Suroboyo melalui siaran radio pemberontakan dengan pekik 'Merdeka atau Mati!'.",
+    value:"Membuktikan keberanian dan pengorbanan rakyat dalam mempertahankan kemerdekaan dari ancaman penjajahan kembali.",
+    source:"Sejarah Nasional Indonesia Jilid VI & Keppres No. 316 Tahun 1959 (Hari Pahlawan)"
+  },
+  {
+    id:"bandunglautanapi",
+    title:"Peristiwa Bandung Lautan Api",
+    place:"Bandung, Jawa Barat",
+    year:1946,lat:-6.934,lon:107.605,era:"post",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Bandung_Lautan_Api.jpg?width=1000",
+    prompt:"Monumen ini mengenang strategi bumi hangus agar kota tidak dimanfaatkan sebagai markas tentara Sekutu dan NICA. Di kota mana dan tahun berapa peristiwa ini terjadi?",
+    hint:"Peristiwa heroik pada 24 Maret ini juga diabadikan dalam lagu perjuangan 'Halo-Halo Bandung'.",
+    fact:"Pada 23–24 Maret 1946, menanggapi ultimatum Sekutu agar TRI mengosongkan Bandung bagian selatan, sekitar 200.000 warga bersama pejuang TRI membakar rumah dan fasilitas strategis di Bandung sebelum mengungsi ke selatan agar tidak digunakan oleh pasukan Sekutu/NICA.",
+    value:"Semangat rela berkorban harta benda demi menjaga kehormatan dan strategi pertahanan kemerdekaan bangsa.",
+    source:"Sejarah Nasional Indonesia Jilid VI & Dinas Kebudayaan dan Pariwisata Kota Bandung"
   },
   {
     id:"gerilya",
     title:"Perang Gerilya Jenderal Sudirman",
     place:"Yogyakarta – Jawa Tengah",
-    year:1948,
-    lat:-7.801,lon:110.365,
+    year:1948,lat:-7.801,lon:110.365,era:"post",
     img:"https://commons.wikimedia.org/wiki/Special:FilePath/Sudirman.jpg?width=900",
-    hint:"Setelah Agresi Militer Belanda II Desember, Panglima Besar TNI memimpin perlawanan gerilya dari kawasan Jawa Tengah-DIY.",
-    fact:"Pada Desember 1948, meski sakit paru-paru dan harus ditandu, Jenderal Sudirman memimpin perang gerilya untuk menjaga eksistensi Republik Indonesia."
+    prompt:"Panglima Besar pada foto ini memimpin perang gerilya mempertahankan kemerdekaan saat Agresi Militer Belanda II. Di wilayah mana perlawanan ini berpusat dan tahun berapa dimulainya?",
+    hint:"Perang gerilya ini dimulai bulan Desember setelah ibu kota sementara RI di Jawa diduduki Belanda.",
+    fact:"Ketika Belanda melancarkan Agresi Militer II pada 19 Desember 1948 dan menduduki ibu kota Yogyakarta, Panglima Besar Jenderal Sudirman yang tengah sakit parah paru-paru tetap keluar kota memimpin perang gerilya selama sekitar 7 bulan berpindah-pindah di wilayah DIY–Jawa Tengah–Jawa Timur dengan ditandu.",
+    value:"Keteladanan pengabdian tanpa pamrih dan keteguhan prinsip pemimpin di tengah kondisi paling sulit.",
+    source:"Museum Sasmitaloka Panglima Besar Jenderal Sudirman & Sejarah TNI"
+  },
+  {
+    id:"hatta",
+    title:"Kiprah Mohammad Hatta (Bukittinggi – Kedaulatan RI)",
+    place:"Bukittinggi, Sumatra Barat",
+    year:1949,lat:-0.305,lon:100.369,era:"post",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Mohammad_Hatta_1950.jpg?width=900",
+    prompt:"Tokoh ini memimpin delegasi RI dalam Konferensi Meja Bundar (KMB) untuk pengakuan kedaulatan. Kapan KMB berlangsung dan di kota mana tokoh ini dilahirkan?",
+    hint:"Kota kelahirannya terletak di dataran tinggi Sumatra Barat (terkenal dengan Jam Gadang).",
+    fact:"Mohammad Hatta (lahir di Bukittinggi, 12 Agustus 1902) memimpin delegasi Republik Indonesia dalam Konferensi Meja Bundar (KMB) di Den Haag pada Agustus–November 1949. Hasil KMB berujung pada penandatanganan pengakuan kedaulatan Indonesia oleh Kerajaan Belanda pada 27 Desember 1949.",
+    value:"Menunjukkan bahwa perjuangan diplomasi yang cerdas dan berintegritas sama pentingnya dengan perjuangan bersenjata.",
+    source:"Arsip Nasional RI (ANRI) & Biografi Bung Hatta"
+  },
+  {
+    id:"kaa",
+    title:"Konferensi Asia-Afrika (KAA)",
+    place:"Gedung Merdeka, Bandung",
+    year:1955,lat:-6.921,lon:107.609,era:"post",
+    img:"https://commons.wikimedia.org/wiki/Special:FilePath/Asian%E2%80%93African_Conference_at_Bandung_April_1955.jpg?width=1000",
+    prompt:"Pertemuan bersejarah para pemimpin negara Asia dan Afrika ini digelar di Indonesia. Kapan dan di kota manakah konferensi ini berlangsung?",
+    hint:"Pertemuan pemimpin 29 negara Asia dan Afrika ini digelar di kota berjuluk Parijs van Java.",
+    fact:"Konferensi Asia-Afrika berlangsung pada 18–24 April 1955 di Gedung Merdeka, Bandung, diikuti oleh 29 negara dari kawasan Asia dan Afrika atas prakarsa 5 negara (Indonesia, India, Pakistan, Burma, Sri Lanka). Konferensi ini menghasilkan Dasasila Bandung yang menjadi tonggak lahirnya Gerakan Non-Blok.",
+    value:"Peran aktif Indonesia dalam solidaritas dunia, anti-kolonialisme, dan perdamaian internasional.",
+    source:"Museum Konperensi Asia Afrika (Kementerian Luar Negeri RI) & UNESCO Memory of the World"
   }
 ];
 
-/* Peta SVG Indonesia (viewBox 0 0 940 380 -> lon 94.5..141.5, lat 6.5..-12.5; 20px/derajat) */
-const ISLANDS = [
-  // Sumatra
-  "M14,22 L42,35 L78,56 L108,85 L125,120 L150,152 L195,180 L218,215 L212,248 L192,245 L165,212 L130,175 L102,140 L78,100 L42,68 L10,36 Z",
-  // Bangka & Belitung
-  "M218,168 L234,172 L232,188 L216,184 Z",
-  "M244,180 L256,182 L254,194 L242,192 Z",
-  // Jawa
-  "M222,256 L262,252 L308,262 L356,266 L396,276 L398,292 L352,292 L298,288 L248,278 L220,268 Z",
-  // Madura
-  "M362,262 L388,262 L386,270 L360,269 Z",
-  // Bali & Nusa Tenggara
-  "M405,292 L422,292 L420,305 L403,302 Z",
-  "M427,295 L444,295 L442,307 L425,305 Z",
-  "M450,295 L485,293 L488,306 L448,306 Z",
-  "M496,294 L558,288 L560,300 L495,304 Z",
-  "M515,315 L536,314 L535,326 L514,326 Z",
-  "M565,302 L615,286 L622,298 L572,318 Z",
-  // Kalimantan
-  "M288,125 L312,92 L356,68 L402,42 L438,52 L462,88 L452,135 L440,185 L402,202 L352,196 L305,172 L286,148 Z",
-  // Sulawesi
-  "M488,118 L512,102 L565,104 L608,95 L614,112 L566,120 L535,126 L532,162 L562,175 L555,196 L532,186 L516,228 L496,235 L492,195 L488,150 Z",
-  "M548,204 L568,202 L566,226 L546,224 Z",
-  // Maluku (Halmahera & Seram & Buru)
-  "M654,102 L676,94 L682,126 L662,138 L652,122 Z",
-  "M628,195 L646,194 L646,208 L628,208 Z",
-  "M654,192 L696,192 L698,208 L654,208 Z",
-  // Papua
-  "M712,150 L748,136 L776,158 L818,162 L872,168 L924,182 L924,258 L886,258 L848,242 L808,214 L772,196 L732,188 L710,168 Z"
-];
-
 const $=s=>document.querySelector(s);
-const toXY=(lat,lon)=>({x:(lon-94.5)*20,y:(6.5-lat)*20});
-const toLL=(x,y)=>({lat:6.5-y/20,lon:94.5+x/20});
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const shuf=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
-
 function haversine(lat1,lon1,lat2,lon2){
   const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
   const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
@@ -269,27 +353,34 @@ function haversine(lat1,lon1,lat2,lon2){
 function eraLabel(y){
   if(y<1200)return"Kerajaan Hindu–Buddha";
   if(y<1600)return"Kesultanan & Maritim Nusantara";
-  if(y<1900)return"Masa Kolonial & Perlawanan Daerah";
+  if(y<1900)return"Masa Kolonial & Perlawanan";
   if(y<1945)return"Pergerakan Nasional";
   if(y<1950)return"Revolusi Kemerdekaan";
   return"Indonesia Modern";
 }
 function rankTitle(xp){
-  if(xp>=20000)return"Mahapatih Sejarah";
-  if(xp>=12000)return"Pujangga Nusantara";
-  if(xp>=6000)return"Penjelajah Senior";
+  if(xp>=25000)return"Mahapatih Sejarah";
+  if(xp>=15000)return"Pujangga Nusantara";
+  if(xp>=7500)return"Penjelajah Senior";
   return"Penjelajah Muda";
 }
 
-/* State */
-let G = {
-  deck:[],round:0,score:0,history:[],
-  lens:"free", // free | nozoom | still
-  guess:{lat:null,lon:null,year:1945},
-  hintUsed:false,
-  pan:{x:0,y:0,scale:1},
-  sfx:true,
-  totalXp:Number(localStorage.getItem("ng_xp")||0)
+let G={
+  mode:"solo", // solo | team
+  era:"all",   // all | pre | post
+  teams:[],    // [{name,score}]
+  deck:[],round:0,score:0,history:[],lens:"free",
+  guess:{lat:null,lon:null,year:1945},hintUsed:false,
+  pan:{x:0,y:0,scale:1},sfx:true,mapExpanded:false,
+  totalXp:Number(localStorage.getItem("ng_xp")||0),
+  best:Number(localStorage.getItem("ng_best")||0)
+};
+let map=null,guessMarker=null,resMap=null;
+
+const LENS_INFO={
+  free:{name:"Bebas Pandang",mult:1,desc:"Bisa geser & zoom foto adegan (Skor dasar)"},
+  nozoom:{name:"Tanpa Zoom",mult:1.15,desc:"Hanya bisa geser foto (+15% Bonus Skor)"},
+  still:{name:"Gambar Diam",mult:1.30,desc:"Sudut pandang terkunci (+30% Bonus Skor)"}
 };
 
 /* Web Audio SFX */
@@ -313,54 +404,174 @@ function confetti(){
   const cols=["#f97316","#facc15","#22c55e","#38bdf8","#f43f5e"];
   for(let i=0;i<40;i++){
     const p=document.createElement("i");
-    p.style.left=Math.random()*100+"vw";
-    p.style.background=cols[i%cols.length];
-    p.style.animationDelay=(Math.random()*0.6)+"s";
-    w.appendChild(p);
+    p.style.left=Math.random()*100+"vw";p.style.background=cols[i%cols.length];
+    p.style.animationDelay=(Math.random()*0.6)+"s";w.appendChild(p);
   }
   document.body.appendChild(w);setTimeout(()=>w.remove(),3200);
 }
+function cleanMaps(){
+  if(map){try{map.remove()}catch(e){}map=null}
+  if(resMap){try{resMap.remove()}catch(e){}resMap=null}
+  guessMarker=null;
+}
 
-function startSession(){
-  G.deck=shuf(SCENES).slice(0,5);
+/* ==================== HALAMAN AWAL ==================== */
+function renderHome(){
+  cleanMaps();
+  $("#app").innerHTML=`
+  <header class="hud">
+    <div class="brand" onclick="renderHome()">
+      <span class="logo">🧭</span>
+      <div>
+        <div>NUSANTARA GUESSER</div>
+        <div style="font-size:11px;color:var(--mut);font-weight:500">PSAS Sejarah • XI PPLG 2</div>
+      </div>
+    </div>
+    <div class="hud-pills">
+      <div class="pill">🎖️ <b>${rankTitle(G.totalXp)}</b></div>
+      <div class="pill">⭐ Total XP: <b class="mono">${G.totalXp.toLocaleString("id-ID")}</b></div>
+      <button class="btn sm" onclick="G.sfx=!G.sfx;renderHome()">${G.sfx?"🔊 SFX":"🔇 SFX"}</button>
+      <button class="btn sm" onclick="openAbout()">ℹ️ Tentang Projek</button>
+    </div>
+  </header>
+
+  <main class="hero">
+    <div class="hero-badge">🇮🇩 Game Edukasi Sejarah Indonesia</div>
+    <h1>Tebak <span>Di Mana & Kapan</span><br>Sejarah Terjadi</h1>
+    <p class="sub">
+      Jelajahi arsip foto peristiwa & tokoh bersejarah Nusantara. Tandai lokasinya di peta interaktif Indonesia dan tentukan tahun kejadiannya seakurat mungkin!
+    </p>
+
+    <div class="era-filter">
+      <button class="chip ${G.era==="all"?"active":""}" onclick="sfxPin();G.era='all';renderHome()">🌏 Semua Era (${SCENES.length})</button>
+      <button class="chip ${G.era==="pre"?"active":""}" onclick="sfxPin();G.era='pre';renderHome()">🏛️ Pra-Kemerdekaan (10)</button>
+      <button class="chip ${G.era==="post"?"active":""}" onclick="sfxPin();G.era='post';renderHome()">🇮🇩 Kemerdekaan & Modern (6)</button>
+    </div>
+
+    <div class="hero-actions">
+      <button class="btn pri lg" onclick="sfxPin();startSolo()">▶ MAIN SOLO (5 RONDE)</button>
+      <button class="btn lg" onclick="sfxPin();openTeamSetup()">👥 MODE KELOMPOK (DUEL KELAS)</button>
+      <button class="btn lg" onclick="sfxPin();openTimeline()">📚 ARSIP & LINIMASA</button>
+    </div>
+
+    <div class="hero-actions" style="margin-top:-10px">
+      <button class="btn sm" onclick="sfxPin();openLensModal(true)">🔍 Lensa: ${LENS_INFO[G.lens].name}</button>
+      <button class="btn sm" onclick="sfxPin();openHelp()">📖 Cara Bermain</button>
+    </div>
+
+    <div class="hero-stats">
+      <div class="pill">🏆 Rekor Solo: <b class="mono">${G.best.toLocaleString("id-ID")}</b> / 25.000</div>
+      <div class="pill">📚 Koleksi Arsip: <b>${SCENES.length} Peristiwa</b></div>
+      <div class="pill">🗺️ Peta Detail: <b>OpenFreeMap Vector</b></div>
+    </div>
+
+    <div class="feat-grid">
+      <div class="feat">
+        <div class="ic">🖼️</div>
+        <h3>1. Amati Foto & Arahan</h3>
+        <p>Geser dan zoom foto arsip sejarah, baca pertanyaan pengarah, atau pilih mode Lensa untuk bonus skor hingga +30%.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">🗺️</div>
+        <h3>2. Tandai di Peta Maps</h3>
+        <p>Zoom in hingga detail kota dan jalan di Indonesia, lalu klik peta untuk menaruh pin lokasi kejadian.</p>
+      </div>
+      <div class="feat">
+        <div class="ic">📚</div>
+        <h3>3. Belajar dari Arsip</h3>
+        <p>Setiap ronde menyajikan fakta sejarah, makna keteladanan, serta menu Linimasa kronologis (825–1955).</p>
+      </div>
+    </div>
+  </main>`;
+}
+
+function getPool(){
+  if(G.era==="pre")return SCENES.filter(s=>s.era==="pre");
+  if(G.era==="post")return SCENES.filter(s=>s.era==="post");
+  return SCENES;
+}
+
+function startSolo(){
+  G.mode="solo";G.teams=[];
+  const pool=shuf(getPool());
+  G.deck=pool.slice(0,5);
   G.round=0;G.score=0;G.history=[];
+  loadRound();
+}
+
+function openTeamSetup(){
+  const m=document.createElement("div");m.className="ov";m.id="teamModal";
+  m.innerHTML=`<div class="modal" style="max-width:480px">
+    <h3 style="margin-top:0">👥 Mode Kelompok / Duel Kelas</h3>
+    <p style="font-size:13px;color:var(--mut)">Main bergantian di satu layar! Setiap tim mendapat <b>2 ronde</b> adil dengan skor klasemen akhir.</p>
+    <label style="font-size:13px;font-weight:700;display:block;margin-bottom:6px">Jumlah Kelompok:</label>
+    <select id="tCount" class="team-in" onchange="renderTeamInputs()">
+      <option value="2">2 Kelompok (Total 4 Ronde)</option>
+      <option value="3">3 Kelompok (Total 6 Ronde)</option>
+      <option value="4">4 Kelompok (Total 8 Ronde)</option>
+    </select>
+    <div id="tInputs"></div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn" style="flex:1" onclick="document.getElementById('teamModal').remove()">Batal</button>
+      <button class="btn pri" style="flex:2" onclick="startTeamGame()">▶ Mulai Duel!</button>
+    </div>
+  </div>`;
+  document.body.appendChild(m);
+  renderTeamInputs();
+}
+function renderTeamInputs(){
+  const n=Number($("#tCount").value);
+  let html="";
+  for(let i=0;i<n;i++){
+    html+=`<input class="team-in" id="tn${i}" value="Kelompok ${i+1}" maxlength="24" placeholder="Nama Kelompok ${i+1}">`;
+  }
+  $("#tInputs").innerHTML=html;
+}
+function startTeamGame(){
+  const n=Number($("#tCount").value);
+  G.teams=[];
+  for(let i=0;i<n;i++){
+    const v=($("#tn"+i).value||"").trim()||`Kelompok ${i+1}`;
+    G.teams.push({name:v,score:0});
+  }
+  const need=n*2;
+  let pool=shuf(getPool());
+  while(pool.length<need)pool=pool.concat(shuf(SCENES));
+  G.deck=pool.slice(0,need);
+  G.mode="team";G.round=0;G.score=0;G.history=[];
+  const tm=$("#teamModal");if(tm)tm.remove();
   loadRound();
 }
 
 function loadRound(){
   G.guess={lat:null,lon:null,year:1945};
-  G.hintUsed=false;
-  G.pan={x:0,y:0,scale:1};
+  G.hintUsed=false;G.pan={x:0,y:0,scale:1};G.mapExpanded=false;
   renderGame();
 }
 
-const LENS_INFO={
-  free:{name:"Bebas Pandang",mult:1,desc:"Bisa geser & zoom foto adegan (Skor dasar)"},
-  nozoom:{name:"Tanpa Zoom",mult:1.15,desc:"Hanya bisa geser foto (+15% Bonus Skor)"},
-  still:{name:"Gambar Diam",mult:1.30,desc:"Sudut pandang terkunci (+30% Bonus Skor)"}
-};
-
 function renderGame(){
   const sc=G.deck[G.round];
+  const totalR=G.deck.length;
   const lens=LENS_INFO[G.lens];
   const canPan=G.lens!=="still",canZoom=G.lens==="free";
+  const curTeam=G.mode==="team"?G.teams[G.round%G.teams.length]:null;
 
   $("#app").innerHTML=`
   <header class="hud">
-    <div class="brand">
+    <div class="brand" onclick="if(confirm('Kembali ke Beranda? Progres sesi ini akan direset.'))renderHome()">
       <span class="logo">🧭</span>
       <div>
         <div>NUSANTARA GUESSER</div>
-        <div style="font-size:11px;color:var(--mut);font-weight:500">Edisi Sejarah Indonesia</div>
+        <div style="font-size:11px;color:var(--mut);font-weight:500">${G.mode==="team"?"Mode Duel Kelompok":"Mode Solo"}</div>
       </div>
     </div>
     <div class="hud-pills">
-      <div class="pill">Ronde <b class="mono">0${G.round+1}/05</b></div>
-      <div class="pill">Skor <b class="mono">${G.score.toLocaleString("id-ID")}</b></div>
-      <div class="pill">🎖️ <b>${rankTitle(G.totalXp)}</b></div>
+      ${curTeam?`<div class="pill" style="border-color:var(--acc)">🚩 Giliran: <b>${esc(curTeam.name)}</b> (${curTeam.score.toLocaleString("id-ID")})</div>`:""}
+      <div class="pill">Ronde <b class="mono">${String(G.round+1).padStart(2,"0")}/${String(totalR).padStart(2,"0")}</b></div>
+      ${G.mode==="solo"?`<div class="pill">Skor <b class="mono">${G.score.toLocaleString("id-ID")}</b></div>`:""}
       <button class="btn sm" onclick="G.sfx=!G.sfx;renderGame()">${G.sfx?"🔊 SFX":"🔇 SFX"}</button>
       <button class="btn sm" onclick="openHelp()">❓ Panduan</button>
-      <button class="btn sm" onclick="if(confirm('Mulai ulang 5 ronde baru?'))startSession()">🔄 Baru</button>
+      <button class="btn sm" onclick="if(confirm('Kembali ke Beranda?'))renderHome()">🏠 Beranda</button>
     </div>
   </header>
 
@@ -371,12 +582,12 @@ function renderGame(){
         <div class="scene-fb">
           <div style="font-size:56px;margin-bottom:10px">📜</div>
           <h3 style="margin:0 0 8px">Mode Offline — Arsip Adegan</h3>
-          <p style="color:var(--mut);font-size:14px;line-height:1.5">Foto daring tidak dapat dimuat (kemungkinan koneksi offline). Gunakan petunjuk di bawah untuk menebak lokasi dan tahun peristiwa!</p>
+          <p style="color:var(--mut);font-size:14px;line-height:1.5">Foto daring tidak dapat dimuat (koneksi offline). Gunakan arahan pertanyaan di bawah untuk menebak lokasi dan tahun peristiwa!</p>
         </div>
       </div>
 
       <div class="scene-overlay-top">
-        <button class="badge-lens" onclick="openLensModal()">
+        <button class="badge-lens" onclick="openLensModal(false)">
           🔍 Lensa: <b>${lens.name}</b> ${lens.mult>1?`<span style="color:var(--gold)">(+${Math.round((lens.mult-1)*100)}%)</span>`:""}
         </button>
         ${canZoom?`
@@ -388,45 +599,33 @@ function renderGame(){
       </div>
 
       <div class="hint-box">
-        <div>
-          ${G.hintUsed
-            ?`<span style="color:var(--gold);font-weight:700">💡 PETUNJUK:</span> ${sc.hint}`
-            :`<span style="color:var(--mut)">Amati foto arsip, lalu tebak <b>di mana</b> & <b>kapan</b> peristiwa ini terjadi.</span>`}
+        <div style="line-height:1.45">
+          <div style="font-weight:700;color:#fff;margin-bottom:2px">🎯 ${sc.prompt}</div>
+          ${G.hintUsed?`<div style="color:var(--gold);margin-top:4px"><b>💡 PETUNJUK:</b> ${sc.hint}</div>`:""}
         </div>
-        ${G.hintUsed?"":`<button class="btn sm" onclick="G.hintUsed=true;sfxPin();renderGame()">💡 Petunjuk (-10%)</button>`}
+        ${G.hintUsed?"":`<button class="btn sm" style="white-space:nowrap" onclick="G.hintUsed=true;sfxPin();renderGame()">💡 Petunjuk (-10%)</button>`}
       </div>
     </section>
 
     <aside class="panel">
       <div>
         <div class="sec-title">
-          <span>1. DI MANA? (KLIK PETA INDONESIA)</span>
-          <span class="mono" style="color:var(--acc2)">${G.guess.lat!==null?"📍 PIN TERPASANG":"BELUM ADA PIN"}</span>
+          <span>1. DI MANA? (ZOOM & KLIK PETA)</span>
+          <span class="mono" id="pinState" style="color:var(--acc2)">${G.guess.lat!==null?"📍 PIN TERPASANG":"BELUM ADA PIN"}</span>
         </div>
-        <div class="map-box" id="mapbox" onclick="placePin(event)">
-          <svg viewBox="0 0 940 380" id="mapsvg">
-            <rect width="940" height="380" fill="var(--sea)"/>
-            <g stroke="rgba(255,255,255,0.06)" stroke-width="1">
-              <line x1="0" y1="130" x2="940" y2="130" stroke-dasharray="4 4"/>
-              <line x1="200" y1="0" x2="200" y2="380"/><line x1="400" y1="0" x2="400" y2="380"/>
-              <line x1="600" y1="0" x2="600" y2="380"/><line x1="800" y1="0" x2="800" y2="380"/>
-            </g>
-            <text x="14" y="124" fill="rgba(255,255,255,0.22)" font-size="10" class="mono">0° KHATULISTIWA</text>
-            <g fill="var(--land)" stroke="var(--land-bd)" stroke-width="1.5">
-              ${ISLANDS.map(d=>`<path d="${d}"/>`).join("")}
-            </g>
-            <g fill="rgba(255,255,255,0.38)" font-size="11" font-weight="600" pointer-events="none">
-              <text x="95" y="130">Sumatra</text>
-              <text x="295" y="282">Jawa</text>
-              <text x="345" y="135">Kalimantan</text>
-              <text x="515" y="155">Sulawesi</text>
-              <text x="790" y="205">Papua</text>
-            </g>
-            <g id="pinLayer"></g>
-          </svg>
+        <div class="map-wrap ${G.mapExpanded?"expanded":""}" id="mapWrap" style="margin-top:6px">
+          <div id="map"></div>
+          <div class="map-tools">
+            <button class="btn sm" onclick="resetMapView()" title="Fokus ke Indonesia">🇮🇩</button>
+            <button class="btn sm" onclick="toggleMapSize()" title="Perbesar / Perkecil Peta">${G.mapExpanded?"🗕 Kecilkan":"⤢ Perbesar"}</button>
+          </div>
+          <div class="map-styles">
+            <button class="btn sm" onclick="setMapStyle('liberty')">☀️ Terang</button>
+            <button class="btn sm" onclick="setMapStyle('dark')">🌙 Gelap</button>
+          </div>
         </div>
         <div class="map-status">
-          <span id="coordTxt">${G.guess.lat!==null?`Koordinat: ${G.guess.lat.toFixed(2)}°, ${G.guess.lon.toFixed(2)}°`:"Klik di pulau/wilayah pada peta"}</span>
+          <span id="coordTxt">${G.guess.lat!==null?`Koordinat: ${G.guess.lat.toFixed(3)}°, ${G.guess.lon.toFixed(3)}°`:"Scroll / klik ＋－ untuk zoom, lalu klik peta untuk pasang pin"}</span>
         </div>
       </div>
 
@@ -456,10 +655,56 @@ function renderGame(){
     </aside>
   </main>`;
 
-  drawPin();
+  initLeafletMap();
   initPan();
 }
 
+function initLeafletMap(){
+  if(map){try{map.remove()}catch(e){}map=null}
+  guessMarker=null;
+  if(typeof maplibregl==="undefined"){
+    $("#map").innerHTML=`<div style="padding:20px;text-align:center;color:var(--mut);font-size:13px">Peta OpenFreeMap memerlukan koneksi internet.</div>`;
+    return;
+  }
+  map=new maplibregl.Map({
+    container:"map",
+    style:"https://tiles.openfreemap.org/styles/liberty",
+    center:[118.0,-2.5],
+    zoom:3.6,
+    minZoom:2,
+    maxZoom:16
+  });
+  map.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
+
+  if(G.guess.lat!==null){
+    guessMarker=new maplibregl.Marker({color:"#f97316"}).setLngLat([G.guess.lon,G.guess.lat]).addTo(map);
+  }
+  map.on("click",e=>{
+    const{lat,lng}=e.lngLat;
+    G.guess.lat=lat;G.guess.lon=lng;
+    sfxPin();
+    if(guessMarker){guessMarker.setLngLat([lng,lat])}
+    else{guessMarker=new maplibregl.Marker({color:"#f97316"}).setLngLat([lng,lat]).addTo(map)}
+    $("#coordTxt").textContent=`Koordinat: ${lat.toFixed(3)}°, ${lng.toFixed(3)}°`;
+    $("#pinState").textContent="📍 PIN TERPASANG";
+    $("#lockBtn").disabled=false;
+  });
+  setTimeout(()=>map&&map.resize(),80);
+}
+function setMapStyle(name){
+  sfxPin();
+  if(map)map.setStyle(`https://tiles.openfreemap.org/styles/${name}`);
+}
+function resetMapView(){if(map)map.flyTo({center:[118.0,-2.5],zoom:3.6})}
+function toggleMapSize(){
+  G.mapExpanded=!G.mapExpanded;
+  const w=$("#mapWrap");if(w)w.classList.toggle("expanded",G.mapExpanded);
+  const b=document.querySelector(".map-tools button:last-child");
+  if(b)b.textContent=G.mapExpanded?"🗕 Kecilkan":"⤢ Perbesar";
+  setTimeout(()=>map&&map.resize(),220);
+}
+
+/* Pan & Zoom Foto Adegan */
 function initPan(){
   const v=$("#viewer");
   if(!v||G.lens==="still")return;
@@ -476,9 +721,7 @@ function initPan(){
     const w=$("#swrap");if(w)w.style.transform=`translate(${G.pan.x}px,${G.pan.y}px) scale(${G.pan.scale})`;
   };
   v.onpointerup=()=>{dragging=false;v.classList.remove("panning")};
-  if(G.lens==="free"){
-    v.onwheel=e=>{e.preventDefault();zoomBy(e.deltaY<0?0.18:-0.18)};
-  }
+  if(G.lens==="free"){v.onwheel=e=>{e.preventDefault();zoomBy(e.deltaY<0?0.18:-0.18)}}
 }
 function zoomBy(d){
   G.pan.scale=Math.max(1,Math.min(2.8,+(G.pan.scale+d).toFixed(2)));
@@ -489,27 +732,6 @@ function resetPan(){
   const w=$("#swrap");if(w)w.style.transform=`translate(0px,0px) scale(1)`;
 }
 
-function placePin(e){
-  const svg=$("#mapsvg"),pt=svg.createSVGPoint();
-  pt.x=e.clientX;pt.y=e.clientY;
-  const loc=pt.matrixTransform(svg.getScreenCTM().inverse());
-  const ll=toLL(loc.x,loc.y);
-  G.guess.lat=ll.lat;G.guess.lon=ll.lon;
-  sfxPin();
-  drawPin();
-  $("#coordTxt").textContent=`Koordinat: ${ll.lat.toFixed(2)}°, ${ll.lon.toFixed(2)}°`;
-  $("#lockBtn").disabled=false;
-  const st=document.querySelector(".panel .sec-title .mono");
-  if(st)st.textContent="📍 PIN TERPASANG";
-}
-function drawPin(){
-  const layer=$("#pinLayer");if(!layer)return;
-  if(G.guess.lat===null){layer.innerHTML="";return}
-  const p=toXY(G.guess.lat,G.guess.lon);
-  layer.innerHTML=`
-    <circle cx="${p.x}" cy="${p.y}" r="11" fill="rgba(249,115,22,0.3)"/>
-    <circle cx="${p.x}" cy="${p.y}" r="5.5" fill="#f97316" stroke="#fff" stroke-width="2"/>`;
-}
 function setYear(v){
   const y=Math.max(600,Math.min(2025,parseInt(v)||1945));
   G.guess.year=y;
@@ -525,35 +747,32 @@ function submitGuess(){
 
   const locPts=Math.round(2500*Math.exp(-dist/450));
   const yrPts=Math.round(2500*Math.exp(-yDiff/38));
-  let total=locPts+yrPts;
-  total=Math.round(total*LENS_INFO[G.lens].mult);
+  let total=Math.round((locPts+yrPts)*LENS_INFO[G.lens].mult);
   if(G.hintUsed)total=Math.round(total*0.9);
 
+  const curTeam=G.mode==="team"?G.teams[G.round%G.teams.length]:null;
+  if(curTeam){curTeam.score+=total}
   G.score+=total;
   G.totalXp+=total;
   localStorage.setItem("ng_xp",G.totalXp);
-  G.history.push({sc,dist,yDiff,total,locPts,yrPts,guess:{...G.guess}});
+  G.history.push({sc,dist,yDiff,total,locPts,yrPts,team:curTeam?curTeam.name:null});
   sfxGood();
 
-  const pGuess=toXY(G.guess.lat,G.guess.lon),pTrue=toXY(sc.lat,sc.lon);
+  const react=total>=4500?"🎯 TEPAT SASARAN!":total>=3200?"🔥 LUAR BIASA!":total>=1800?"👍 CUKUP AKURAT!":"🧭 TERUS BERLATIH!";
+  const totalR=G.deck.length;
   const m=document.createElement("div");m.className="ov";m.id="resModal";
   m.innerHTML=`<div class="modal">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <span class="era-tag">HASIL RONDE 0${G.round+1}/05</span>
-      <span class="mono" style="color:var(--gold);font-weight:800;font-size:20px">+${total.toLocaleString("id-ID")} POIN</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <span class="era-tag">HASIL RONDE ${String(G.round+1).padStart(2,"0")}/${String(totalR).padStart(2,"0")}${curTeam?` · ${esc(curTeam.name)}`:""}</span>
+        <span class="era-tag" style="background:rgba(34,197,94,.18);color:var(--ok)">${react}</span>
+      </div>
+      <span class="mono" id="cntPts" style="color:var(--gold);font-weight:800;font-size:22px">+0 POIN</span>
     </div>
     <h2 style="margin:8px 0 4px">${sc.title}</h2>
-    <div style="color:var(--mut);font-size:14px;margin-bottom:12px">📍 ${sc.place} · 📅 Tahun <b>${sc.year}</b></div>
+    <div style="color:var(--mut);font-size:14px">📍 ${sc.place} · 📅 Tahun <b>${sc.year}</b></div>
 
-    <div class="map-box" style="cursor:default;margin-bottom:12px">
-      <svg viewBox="0 0 940 380">
-        <rect width="940" height="380" fill="var(--sea)"/>
-        <g fill="var(--land)" stroke="var(--land-bd)" stroke-width="1.5">${ISLANDS.map(d=>`<path d="${d}"/>`).join("")}</g>
-        <line x1="${pGuess.x}" y1="${pGuess.y}" x2="${pTrue.x}" y2="${pTrue.y}" stroke="#facc15" stroke-width="2.5" stroke-dasharray="6 4"/>
-        <circle cx="${pGuess.x}" cy="${pGuess.y}" r="6" fill="#f97316" stroke="#fff" stroke-width="2"/>
-        <circle cx="${pTrue.x}" cy="${pTrue.y}" r="7" fill="#22c55e" stroke="#fff" stroke-width="2"/>
-      </svg>
-    </div>
+    <div id="resMap"></div>
 
     <div class="score-grid">
       <div class="sc-card">
@@ -568,56 +787,140 @@ function submitGuess(){
       </div>
     </div>
 
-    <div class="era-card" style="margin-bottom:14px">
-      <div style="font-weight:700;margin-bottom:4px;color:var(--acc2)">📖 Fakta Sejarah</div>
-      <div style="font-size:14px;line-height:1.55">${sc.fact}</div>
+    <div class="era-card" style="margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--acc2)">📖 Penjelasan Sejarah</div>
+      <div style="font-size:14px;line-height:1.58">${sc.fact}</div>
+      <div style="font-size:12px;color:var(--mut);margin-top:6px">📚 <b>Sumber:</b> ${sc.source}</div>
+    </div>
+    <div class="era-card" style="margin-bottom:14px;border-color:rgba(34,197,94,.4)">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--ok)">🌟 Makna & Nilai Keteladanan</div>
+      <div style="font-size:14px;line-height:1.55">${sc.value}</div>
     </div>
 
     <button class="btn pri" style="width:100%;padding:13px;font-size:15px" onclick="nextRound()">
-      ${G.round<4?"RONDE BERIKUTNYA →":"LIHAT RINGKASAN AKHIR 🏆"}
+      ${G.round<totalR-1?"RONDE BERIKUTNYA →":"LIHAT RINGKASAN AKHIR 🏆"}
     </button>
   </div>`;
   document.body.appendChild(m);
+
+  /* Animasi count-up skor */
+  let cur=0;const step=Math.max(1,Math.ceil(total/22));
+  const iv=setInterval(()=>{
+    cur=Math.min(total,cur+step);
+    const el=$("#cntPts");if(el)el.textContent=`+${cur.toLocaleString("id-ID")} POIN`;
+    if(cur>=total)clearInterval(iv);
+  },20);
+
+  if(typeof maplibregl!=="undefined"){
+    setTimeout(()=>{
+      if(resMap){try{resMap.remove()}catch(e){}resMap=null}
+      resMap=new maplibregl.Map({
+        container:"resMap",
+        style:"https://tiles.openfreemap.org/styles/liberty",
+        center:[sc.lon,sc.lat],
+        zoom:5
+      });
+      resMap.addControl(new maplibregl.NavigationControl({showCompass:false}),"top-left");
+      const p1=[G.guess.lon,G.guess.lat],p2=[sc.lon,sc.lat];
+      new maplibregl.Marker({color:"#f97316"}).setLngLat(p1).setPopup(new maplibregl.Popup().setText("Tebakanmu")).addTo(resMap);
+      new maplibregl.Marker({color:"#22c55e"}).setLngLat(p2).setPopup(new maplibregl.Popup().setText(sc.place)).addTo(resMap);
+      resMap.on("load",()=>{
+        resMap.addSource("line",{type:"geojson",data:{type:"Feature",geometry:{type:"LineString",coordinates:[p1,p2]}}});
+        resMap.addLayer({id:"line",type:"line",source:"line",paint:{"line-color":"#facc15","line-width":3,"line-dasharray":[2,2]}});
+      });
+      const bounds=new maplibregl.LngLatBounds();bounds.extend(p1);bounds.extend(p2);
+      resMap.fitBounds(bounds,{padding:45,maxZoom:10,duration:450});
+    },60);
+  }
 }
 
 function nextRound(){
+  if(resMap){try{resMap.remove()}catch(e){}resMap=null}
   const m=$("#resModal");if(m)m.remove();
-  if(G.round<4){G.round++;loadRound()}else{showSummary()}
+  if(G.round<G.deck.length-1){G.round++;loadRound()}else{showSummary()}
 }
 
 function showSummary(){
   confetti();sfxGood();
-  const maxPossible=25000;
-  const pct=Math.min(100,Math.round(G.score/maxPossible*100));
+  if(G.mode==="solo"&&G.score>G.best){G.best=G.score;localStorage.setItem("ng_best",G.best)}
+  const maxS=G.deck.length*5000;
+  const pct=Math.min(100,Math.round(G.score/maxS*100));
+  const sortedTeams=G.mode==="team"?G.teams.slice().sort((a,b)=>b.score-a.score):[];
+  const medals=["🥇","🥈","🥉","🏅"];
+
   const m=document.createElement("div");m.className="ov";m.id="sumModal";
   m.innerHTML=`<div class="modal" style="text-align:center">
     <div style="font-size:52px">🏆</div>
-    <h2 style="margin:6px 0">MISI SELESAI!</h2>
-    <p style="color:var(--mut);margin-top:0">Pangkat saat ini: <b style="color:var(--gold)">${rankTitle(G.totalXp)}</b></p>
-    <div class="sc-card" style="margin:14px 0">
-      <div class="sec-title" style="justify-content:center">TOTAL SKOR SESI (5 RONDE)</div>
-      <div class="sc-val" style="font-size:36px">${G.score.toLocaleString("id-ID")}</div>
-      <div style="font-size:13px;color:var(--mut)">Akurasi Keseluruhan: ${pct}%</div>
-    </div>
+    <h2 style="margin:6px 0">${G.mode==="team"?"HASIL DUEL KELOMPOK!":"MISI SELESAI!"}</h2>
+    <p style="color:var(--mut);margin-top:0">Pangkat Akun: <b style="color:var(--gold)">${rankTitle(G.totalXp)}</b></p>
+
+    ${G.mode==="team"?`
+      <div style="text-align:left;margin:14px 0">
+        ${sortedTeams.map((t,i)=>`
+          <div class="sc-card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;${i===0?"border-color:var(--gold)":""}">
+            <span style="font-size:16px;font-weight:700">${medals[i]||"🏅"} ${esc(t.name)}</span>
+            <span class="mono" style="font-size:20px;font-weight:800;color:var(--gold)">${t.score.toLocaleString("id-ID")} pts</span>
+          </div>`).join("")}
+      </div>
+    `:`
+      <div class="sc-card" style="margin:14px 0">
+        <div class="sec-title" style="justify-content:center">TOTAL SKOR SESI (${G.deck.length} RONDE)</div>
+        <div class="sc-val" style="font-size:36px">${G.score.toLocaleString("id-ID")}</div>
+        <div style="font-size:13px;color:var(--mut)">Akurasi Keseluruhan: ${pct}% · Rekor Terbaik: ${G.best.toLocaleString("id-ID")}</div>
+      </div>
+    `}
+
     <div style="text-align:left;margin:14px 0">
       ${G.history.map((h,i)=>`
-        <div style="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--bd);font-size:13px">
-          <span><b>0${i+1}.</b> ${h.sc.title} (${h.sc.year})</span>
-          <span class="mono" style="color:var(--gold)">+${h.total.toLocaleString("id-ID")} (${h.dist} km · ±${h.yDiff} thn)</span>
+        <div style="display:flex;justify-content:space-between;padding:8px 10px;border-bottom:1px solid var(--bd);font-size:13px;gap:8px">
+          <span><b>0${i+1}.</b> ${h.team?`[${esc(h.team)}] `:""}${h.sc.title} (${h.sc.year})</span>
+          <span class="mono" style="color:var(--gold);white-space:nowrap">+${h.total.toLocaleString("id-ID")} (${h.dist} km · ±${h.yDiff} thn)</span>
         </div>`).join("")}
     </div>
-    <button class="btn pri" style="width:100%;padding:13px" onclick="document.getElementById('sumModal').remove();startSession()">▶ MAIN LAGI (5 RONDE BARU)</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn" style="flex:1;padding:13px" onclick="document.getElementById('sumModal').remove();renderHome()">🏠 BERANDA</button>
+      <button class="btn pri" style="flex:2;padding:13px" onclick="document.getElementById('sumModal').remove();${G.mode==="team"?"openTeamSetup()":"startSolo()"}">▶ MAIN LAGI</button>
+    </div>
   </div>`;
   document.body.appendChild(m);
 }
 
-function openLensModal(){
+/* ==================== ARSIP & LINIMASA + MODAL LAIN ==================== */
+function openTimeline(){
+  const sorted=SCENES.slice().sort((a,b)=>a.year-b.year);
+  const m=document.createElement("div");m.className="ov";m.id="tlModal";
+  m.innerHTML=`<div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="margin:0">📚 Arsip & Linimasa Sejarah Indonesia</h2>
+      <button class="btn sm" onclick="document.getElementById('tlModal').remove()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--mut);margin-top:0">Pelajari urutan kronologis peristiwa dan tokoh penting Nusantara sebelum bermain.</p>
+    ${sorted.map(s=>`
+      <div class="tl-item">
+        <img class="tl-img" src="${s.img}" alt="${esc(s.title)}" loading="lazy" onerror="this.style.display='none'">
+        <div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
+            <span class="era-tag mono">${s.year}</span>
+            <span style="font-size:12px;color:var(--mut)">📍 ${s.place}</span>
+          </div>
+          <h4 style="margin:0 0 6px;font-size:15px">${s.title}</h4>
+          <p style="margin:0 0 6px;font-size:13px;color:var(--mut);line-height:1.55">${s.fact}</p>
+          <div style="font-size:12px;color:var(--ok);margin-bottom:4px"><b>Nilai Sejarah:</b> ${s.value}</div>
+          <div style="font-size:11px;color:var(--mut)">📚 <b>Sumber:</b> ${s.source}</div>
+        </div>
+      </div>`).join("")}
+    <button class="btn pri" style="width:100%;margin-top:6px" onclick="document.getElementById('tlModal').remove()">Tutup Arsip</button>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+function openLensModal(fromHome){
   const m=document.createElement("div");m.className="ov";m.id="lensModal";
   m.innerHTML=`<div class="modal" style="max-width:460px">
     <h3 style="margin-top:0">🔍 Pilih Mode Lensa</h3>
     <p style="font-size:13px;color:var(--mut)">Ubah cara kamu mengamati foto sejarah untuk mendapatkan bonus skor.</p>
     ${Object.entries(LENS_INFO).map(([k,v])=>`
-      <button class="lens-opt ${G.lens===k?"active":""}" onclick="G.lens='${k}';G.pan={x:0,y:0,scale:1};document.getElementById('lensModal').remove();renderGame()">
+      <button class="lens-opt ${G.lens===k?"active":""}" onclick="G.lens='${k}';G.pan={x:0,y:0,scale:1};document.getElementById('lensModal').remove();${fromHome?"renderHome()":"renderGame()"}">
         <div><b>${v.name}</b><div style="font-size:12px;color:var(--mut)">${v.desc}</div></div>
         <span>${G.lens===k?"✅":""}</span>
       </button>`).join("")}
@@ -631,18 +934,50 @@ function openHelp(){
   m.innerHTML=`<div class="modal" style="max-width:520px">
     <h3 style="margin-top:0">📖 Cara Bermain NusantaraGuesser</h3>
     <ol style="line-height:1.65;font-size:14px;padding-left:20px">
-      <li>Setiap sesi terdiri dari <b>5 ronde</b> peristiwa & tokoh penting sejarah Indonesia.</li>
-      <li>Amati foto arsip di panel kiri (bisa digeser & zoom sesuai mode <b>Lensa</b>).</li>
-      <li>Klik <b>Peta Indonesia</b> di kanan untuk menentukan <b>lokasi</b> terjadinya peristiwa.</li>
+      <li>Pilih <b>Main Solo</b> (5 ronde) atau <b>Mode Kelompok</b> (2–4 tim bergantian untuk duel kelas).</li>
+      <li>Amati foto arsip dan baca <b>pertanyaan pengarah</b> di bagian bawah gambar.</li>
+      <li>Zoom in / geser <b>Peta Indonesia</b> layaknya Maps, lalu klik lokasi kejadian untuk memasang pin.</li>
       <li>Atur <b>Tahun</b> menggunakan slider, input angka, atau tombol lompat waktu.</li>
-      <li>Tekan <b>Kunci Tebakan</b> untuk melihat seberapa akurat tebakan lokasi (km) dan tahunmu!</li>
+      <li>Tekan <b>Kunci Tebakan</b> untuk melihat skor akurasi jarak (km), selisih tahun, fakta sejarah, dan nilai keteladanan!</li>
     </ol>
     <button class="btn pri" style="width:100%" onclick="document.getElementById('helpModal').remove()">Siap Bermain!</button>
   </div>`;
   document.body.appendChild(m);
 }
 
-startSession();
+function openAbout(){
+  const m=document.createElement("div");m.className="ov";m.id="aboutModal";
+  m.innerHTML=`<div class="modal" style="max-width:540px">
+    <h3 style="margin-top:0">ℹ️ Tentang Projek & Sumber</h3>
+    <p style="font-size:14px;line-height:1.6"><b>NusantaraGuesser</b> adalah aplikasi web game edukasi sejarah Indonesia untuk tugas <b>PSAS Sejarah (XI PPLG 2)</b>.</p>
+    <div class="era-card" style="margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:6px;color:var(--acc2)">🛠️ Teknologi Web</div>
+      <div style="font-size:13px;color:var(--mut);line-height:1.55">HTML5, CSS3, Vanilla JavaScript, MapLibre GL JS (Peta Vektor Interaktif), Web Audio API (Efek Suara), dan LocalStorage.</div>
+    </div>
+    <div class="era-card" style="margin-bottom:14px">
+      <div style="font-weight:700;margin-bottom:6px;color:var(--acc2)">📚 Sumber Arsip & Peta</div>
+      <div style="font-size:13px;color:var(--mut);line-height:1.55">
+        • Foto & Arsip Sejarah: Domain Publik Wikimedia Commons<br>
+        • Peta Interaktif: OpenFreeMap (Vector Tiles)
+      </div>
+    </div>
+    <button class="btn pri" style="width:100%" onclick="document.getElementById('aboutModal').remove()">Tutup</button>
+  </div>`;
+  document.body.appendChild(m);
+}
+
+/* Keyboard Shortcuts: Panah Kiri/Kanan ubah tahun, Enter kunci tebakan / lanjut ronde */
+window.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+  if($("#resModal")){if(e.key==="Enter"){e.preventDefault();nextRound()}return}
+  if(!$("#map"))return;
+  const delta=e.shiftKey?10:1;
+  if(e.key==="ArrowLeft"){e.preventDefault();stepYear(-delta)}
+  else if(e.key==="ArrowRight"){e.preventDefault();stepYear(delta)}
+  else if(e.key==="Enter"&&G.guess.lat!==null){e.preventDefault();submitGuess()}
+});
+
+renderHome();
 </script>
 </body>
 </html>
